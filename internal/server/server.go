@@ -10,8 +10,8 @@ type server struct {
 	ln net.Listener
 }
 
-func NewServer() server {
-	return server{}
+func NewServer() *server {
+	return &server{}
 }
 
 func (sv *server) StartServer() {
