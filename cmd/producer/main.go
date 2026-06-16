@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"metroflow/internal/producer"
 	"net"
 )
@@ -10,7 +10,7 @@ import (
 func main() {
 	conn, err := net.Dial("tcp", "localhost:8080")
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	producer.StreamLog(conn)
 }

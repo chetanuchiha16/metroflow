@@ -6,17 +6,18 @@ import (
 	"time"
 )
 
-func StreamLog(conn net.Conn) string {
+func StreamLog(conn net.Conn) {
 	defer conn.Close()
-	log := fmt.Sprintf("this is a log %v", 1)
-	buffer := []byte(log)
+	logStr := fmt.Sprintf("this is a log %v", 1)
+	buffer := []byte(logStr)
 
 	for {
-		n, err := conn.Write(buffer)
+		_, err := conn.Write(buffer)
 		if err != nil {
 			println(err)
+			return
 		}
-		fmt.Println(string(buffer[:n]))
+		fmt.Println(string(logStr))
 		time.Sleep(3 * time.Second)
 	}
 }
