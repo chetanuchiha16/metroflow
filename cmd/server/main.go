@@ -26,6 +26,7 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
+	defer conn.Close()
 	buffer := make([]byte, 1024)
 	for {
 		n, err := conn.Read(buffer)
