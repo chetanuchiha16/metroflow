@@ -1,9 +1,11 @@
 package server
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -40,25 +42,25 @@ func (sv *server) AcceptLoop() {
 
 func (sv *server) HandleConn(conn net.Conn) {
 	defer conn.Close()
-	buffer := make([]byte, 1024)
-	sv.ReadLoop(conn, buffer)
+	sv.ReadLoop(conn)
 }
 
-func (sv *server) ReadLoop(conn net.Conn, buffer []byte) {
+func (sv *server) ReadLoop(conn net.Conn) {
+	reader := bufio.NewReader(conn)
 	jobs := make(chan string)
-	workers := 1
+	workers := 5
 	sv.fanOut(jobs, workers)
+	var wg sync.WaitGroup
 	for {
-		n, err := conn.Read(buffer)
+		line, _, err := reader.ReadLine()
 		if err != nil {
-			// fmt.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
-			log.Fatalf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
+			log.Fatalf("client %v disconnected %v\n", conn.RemoteAddr().String(), err) // so program exit after the client leaves, to track time
 			return
 		}
-		// fmt.Println(string(buffer[:n]))
-		go func() {
-			jobs <- string(buffer[:n])
-		}()
+		wg.Go(func() {
+			jobs <- string(line)
+		})
+		wg.Wait()
 	}
 }
 
@@ -67,7 +69,7 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 		go func(worker int) {
 			for job := range jobs {
 				fmt.Printf("[%v] job \"%v\" by the worker %v\n", time.Now(), job, worker)
-				time.Sleep(3 * time.Second)
+				time.Sleep(3 * time.Second) // simulate processing
 			}
 		}(worker)
 	}
