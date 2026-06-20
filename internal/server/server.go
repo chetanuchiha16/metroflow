@@ -43,14 +43,20 @@ func (sv *server) HandleConn(conn net.Conn) {
 	sv.ReadLoop(conn, buffer)
 }
 
-func (*server) ReadLoop(conn net.Conn, buffer []byte) {
+func (sv *server) ReadLoop(conn net.Conn, buffer []byte) {
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
 			fmt.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
 			return
 		}
-		fmt.Println(string(buffer[:n]))
+		// fmt.Println(string(buffer[:n]))
+		jobs := make(chan string)
+		workers := 5
+		sv.fanOut(jobs, workers)
+		go func() {
+			jobs <- string(buffer[:n])
+		}()
 	}
 }
 
@@ -58,7 +64,7 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 	for worker := range workers {
 		go func(worker int) {
 			for job := range jobs {
-				fmt.Printf("job %v by the worker %v", job, worker)
+				fmt.Printf("job \"%v\" by the worker %v\n", job, worker)
 			}
 		}(worker)
 	}
