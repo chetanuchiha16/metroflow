@@ -53,3 +53,13 @@ func (*server) ReadLoop(conn net.Conn, buffer []byte) {
 		fmt.Println(string(buffer[:n]))
 	}
 }
+
+func (sv *server) fanOut(jobs <-chan string, workers int) {
+	for worker := range workers {
+		go func(worker int) {
+			for job := range jobs {
+				fmt.Printf("job %v by the worker %v", job, worker)
+			}
+		}(worker)
+	}
+}
