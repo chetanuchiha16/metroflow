@@ -8,9 +8,9 @@ import (
 
 func StreamLog(conn net.Conn) {
 	defer conn.Close()
-	i := 0
-	
-	for {
+	// i := 0
+
+	for i := range 10 {
 		logStr := fmt.Sprintf("this is a log %v", i)
 		buffer := []byte(logStr)
 		_, err := conn.Write(buffer)
@@ -19,7 +19,7 @@ func StreamLog(conn net.Conn) {
 			return
 		}
 		fmt.Println(string(logStr))
-		time.Sleep(3 * time.Second)
-		i++
+		time.Sleep(1 * time.Millisecond)
+		// i++
 	}
 }

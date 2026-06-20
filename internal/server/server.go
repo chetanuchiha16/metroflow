@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
 
 type server struct {
@@ -44,16 +45,17 @@ func (sv *server) HandleConn(conn net.Conn) {
 }
 
 func (sv *server) ReadLoop(conn net.Conn, buffer []byte) {
+	jobs := make(chan string)
+	workers := 1
+	sv.fanOut(jobs, workers)
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			fmt.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
+			// fmt.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
+			log.Fatalf("client %v disconnected %v\n", conn.RemoteAddr().String(), err)
 			return
 		}
 		// fmt.Println(string(buffer[:n]))
-		jobs := make(chan string)
-		workers := 5
-		sv.fanOut(jobs, workers)
 		go func() {
 			jobs <- string(buffer[:n])
 		}()
@@ -64,7 +66,8 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 	for worker := range workers {
 		go func(worker int) {
 			for job := range jobs {
-				fmt.Printf("job \"%v\" by the worker %v\n", job, worker)
+				fmt.Printf("[%v] job \"%v\" by the worker %v\n", time.Now(), job, worker)
+				time.Sleep(3 * time.Second)
 			}
 		}(worker)
 	}
