@@ -1,0 +1,1 @@
+always check if a goroutine has started or( if prev lines are blocking due to waiting for chan) to even get the chance to wait
