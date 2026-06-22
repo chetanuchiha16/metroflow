@@ -57,11 +57,11 @@ func (sv *server) HandleConn(conn net.Conn, wg *sync.WaitGroup) {
 func (sv *server) ReadLoop(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	jobs := make(chan string)
-	workers := 10
+	workers := 1
 	sv.fanOut(jobs, workers)
 	// var wg sync.WaitGroup
 	for {
-		line, _, err := reader.ReadLine()
+		line, _, err := reader.ReadLine() // back pressure, i think
 		if err != nil {
 			log.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err) // so program exit after the client leaves, to track time
 			sv.exit <- true
@@ -79,8 +79,9 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 		go func(worker int) {
 			for job := range jobs {
 				// start := time.Now()
-				fmt.Printf("[%v] job \"%v\" by the worker %v\n", time.Now(), job, worker)
+				fmt.Printf("[%v] job \"%v\" being done by the worker %v...\n", time.Now().Format("12:00:00"), job, worker)
 				time.Sleep(3 * time.Second) // simulate processing
+				fmt.Printf("worker %v finished the job.\n", worker)
 			}
 		}(worker)
 	}
