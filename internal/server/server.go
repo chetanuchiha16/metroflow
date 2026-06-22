@@ -43,9 +43,9 @@ func (sv *server) AcceptLoop() {
 		start := time.Now()
 		wg.Add(1)
 		go sv.HandleConn(conn, &wg)
-		fmt.Printf("[%v] for handleconn to finish\n", time.Now().Format(time.TimeOnly))
+		fmt.Printf("[%v] waiting for handleconn to finish\n", time.Now().Format(time.TimeOnly))
 		wg.Wait()
-		fmt.Printf("[%v] for handle conn finished\n", time.Now().Format(time.TimeOnly))
+		fmt.Printf("[%v] waiting for handle conn finished\n", time.Now().Format(time.TimeOnly))
 		fmt.Printf("handle connection finished in %v\n", time.Since(start))
 	}
 }
@@ -62,7 +62,6 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	workers := 10
 	var fanoutWg sync.WaitGroup
 	fanoutWg.Add(1)
-	go sv.fanOut(jobs, workers, &fanoutWg)
 	// wg.Add(1)
 	// var wg sync.WaitGroup
 	var sendJobWg sync.WaitGroup
@@ -82,14 +81,16 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			// })
 			// wg.Wait()
 		}
-	}(&sendJobWg)
-	fmt.Printf("[%v] for sending jobs...\n", time.Now().Format(time.TimeOnly))
+		}(&sendJobWg)
+	sv.fanOut(jobs, workers, &fanoutWg)
+	
+	fmt.Printf("[%v] waiting for sending jobs...\n", time.Now().Format(time.TimeOnly))
 	sendJobWg.Wait()
-	fmt.Printf("[%v] for sending jobs finished.\n", time.Now().Format(time.TimeOnly))
+	fmt.Printf("[%v] waiting for sending jobs finished.\n", time.Now().Format(time.TimeOnly))
 
-	fmt.Printf("[%v] for fanout to finish...\n", time.Now().Format(time.TimeOnly))
+	fmt.Printf("[%v] waiting for fanout to finish...\n", time.Now().Format(time.TimeOnly))
 	fanoutWg.Wait()
-	fmt.Printf("[%v] for fanout finished.\n", time.Now().Format(time.TimeOnly))
+	fmt.Printf("[%v] waiting for fanout finished.\n", time.Now().Format(time.TimeOnly))
 
 	sv.exit <- true
 
@@ -110,7 +111,7 @@ func (sv *server) fanOut(jobs <-chan string, workers int, wg *sync.WaitGroup) {
 			}
 		}(worker, &workerWg)
 	}
-	fmt.Printf("[%v] for all workers to finish...\n", time.Now().Format(time.TimeOnly))
+	fmt.Printf("[%v] waiting for all workers to finish...\n", time.Now().Format(time.TimeOnly))
 	workerWg.Wait() // waiting for fanout to finish and fanout() is syncronous so this is blocking, job is never being sent deadlock ?
-	fmt.Printf("[%v] for all workers finished\n", time.Now().Format(time.TimeOnly))
+	fmt.Printf("[%v] waiting for all workers finished\n", time.Now().Format(time.TimeOnly))
 }
