@@ -60,11 +60,13 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	jobs := make(chan string)
 	workers := 10
+	var fanoutWg sync.WaitGroup
+	fanoutWg.Add(1)
+	go sv.fanOut(jobs, workers, &fanoutWg)
 	// wg.Add(1)
-	sv.fanOut(jobs, workers)
 	// var wg sync.WaitGroup
-	var wg sync.WaitGroup
-	wg.Add(1)
+	var sendJobWg sync.WaitGroup
+	sendJobWg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
 		for {
@@ -79,29 +81,33 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			// })
 			// wg.Wait()
 		}
-	}(&wg)
+	}(&sendJobWg)
 	fmt.Println("waiting for sending jobs...")
-	wg.Wait() 
-	fmt.Println("waiting for sending jobs finished")
+	sendJobWg.Wait()
+	fmt.Println("waiting for sending jobs finished.")
+	fmt.Println("waiting for fanout to finish...")
+	fanoutWg.Wait()
+	fmt.Println("waiting for fanout finished.")
 	sv.exit <- true
 
 }
 
-func (sv *server) fanOut(jobs <-chan string, workers int) {
-	var wg sync.WaitGroup
+func (sv *server) fanOut(jobs <-chan string, workers int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var workerWg sync.WaitGroup
 	for worker := range workers {
-		wg.Add(1)
-		go func(worker int, wg *sync.WaitGroup) {
-			defer wg.Done()
+		workerWg.Add(1)
+		go func(worker int, workerWg *sync.WaitGroup) {
+			defer workerWg.Done()
 			for job := range jobs {
 				// start := time.Now()
 				fmt.Printf("[%v] job \"%v\" being done by the worker %v...\n", time.Now().Format(time.TimeOnly), job, worker)
 				time.Sleep(3 * time.Second) // simulate processing
 				fmt.Printf("worker %v finished the job.\n", worker)
 			}
-		}(worker, &wg)
+		}(worker, &workerWg)
 	}
-	fmt.Println("waiting for fanout to finish...")
-	wg.Wait() // waiting for fanout to finish and fanout() is syncronous so this is blocking, job is never being sent deadlock
-	fmt.Println("waiting for fanout finished")
+	fmt.Println("waiting for all workers to finish...")
+	workerWg.Wait() // waiting for fanout to finish and fanout() is syncronous so this is blocking, job is never being sent deadlock ?
+	fmt.Println("waiting for all workers finished")
 }
