@@ -16,8 +16,8 @@ type server struct {
 	exit chan bool
 }
 
-func NewServer(exit chan bool) *server {
-	return &server{exit: exit}
+func NewServer() *server {
+	return &server{}
 }
 
 func (sv *server) StartServer() {
@@ -31,23 +31,21 @@ func (sv *server) StartServer() {
 }
 
 func (sv *server) AcceptLoop() {
-	for {
-		conn, err := sv.ln.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("client connected at: %v\n", conn.RemoteAddr().String())
-		buffer := fmt.Appendf(nil, "connected to %v\n", conn.LocalAddr().String())
-		conn.Write(buffer)
-		var wg sync.WaitGroup
-		start := time.Now()
-		wg.Add(1)
-		go sv.HandleConn(conn, &wg)
-		fmt.Printf("[%v] waiting for handleconn to finish\n", time.Now().Format(time.TimeOnly))
-		wg.Wait()
-		fmt.Printf("[%v] waiting for handle conn finished\n", time.Now().Format(time.TimeOnly))
-		fmt.Printf("handle connection finished in %v\n", time.Since(start))
+	conn, err := sv.ln.Accept()
+	if err != nil {
+		log.Fatal(err)
 	}
+	fmt.Printf("client connected at: %v\n", conn.RemoteAddr().String())
+	buffer := fmt.Appendf(nil, "connected to %v\n", conn.LocalAddr().String())
+	conn.Write(buffer)
+	var wg sync.WaitGroup
+	start := time.Now()
+	wg.Add(1)
+	go sv.HandleConn(conn, &wg)
+	fmt.Printf("[%v] waiting for handleconn to finish\n", time.Now().Format(time.TimeOnly))
+	wg.Wait()
+	fmt.Printf("handle connection finished in %v\n", time.Since(start))
+	fmt.Printf("[%v] waiting for handle conn finished\n", time.Now().Format(time.TimeOnly))
 }
 
 func (sv *server) HandleConn(conn net.Conn, wg *sync.WaitGroup) {
@@ -58,8 +56,8 @@ func (sv *server) HandleConn(conn net.Conn, wg *sync.WaitGroup) {
 
 func (sv *server) ReadLoop(conn net.Conn) {
 	reader := bufio.NewReader(conn)
-	jobs := make(chan string)
 	workers := 10
+	jobs := make(chan string, workers)
 	// var fanoutWg sync.WaitGroup
 	// fanoutWg.Add(1)
 	// wg.Add(1)
@@ -73,7 +71,6 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			line, _, err := reader.ReadLine() // back pressure, i think
 			if err != nil {
 				log.Printf("client %v disconnected %v\n", conn.RemoteAddr().String(), err) // so program exit after the client leaves, to track time
-				// sv.exit <- true
 				return
 			}
 			// wg.Go(func() {
@@ -81,7 +78,7 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			// })
 			// wg.Wait()
 		}
-		}(&sendJobWg)
+	}(&sendJobWg)
 	// fmt.Printf("[%v] waiting for fanout to finish...\n", time.Now().Format(time.TimeOnly))
 	sv.fanOut(jobs, workers)
 	// fmt.Printf("[%v] waiting for fanout finished.\n", time.Now().Format(time.TimeOnly))
@@ -92,7 +89,7 @@ func (sv *server) ReadLoop(conn net.Conn) {
 
 	// fanoutWg.Wait()
 
-	sv.exit <- true
+	// sv.exit <- true
 
 }
 
