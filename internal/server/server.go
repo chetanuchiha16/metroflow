@@ -60,8 +60,8 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	jobs := make(chan string)
 	workers := 10
-	var fanoutWg sync.WaitGroup
-	fanoutWg.Add(1)
+	// var fanoutWg sync.WaitGroup
+	// fanoutWg.Add(1)
 	// wg.Add(1)
 	// var wg sync.WaitGroup
 	var sendJobWg sync.WaitGroup
@@ -82,22 +82,21 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			// wg.Wait()
 		}
 		}(&sendJobWg)
-	sv.fanOut(jobs, workers, &fanoutWg)
-	
+	// fmt.Printf("[%v] waiting for fanout to finish...\n", time.Now().Format(time.TimeOnly))
+	sv.fanOut(jobs, workers)
+	// fmt.Printf("[%v] waiting for fanout finished.\n", time.Now().Format(time.TimeOnly))
+
 	fmt.Printf("[%v] waiting for sending jobs...\n", time.Now().Format(time.TimeOnly))
 	sendJobWg.Wait()
 	fmt.Printf("[%v] waiting for sending jobs finished.\n", time.Now().Format(time.TimeOnly))
 
-	fmt.Printf("[%v] waiting for fanout to finish...\n", time.Now().Format(time.TimeOnly))
-	fanoutWg.Wait()
-	fmt.Printf("[%v] waiting for fanout finished.\n", time.Now().Format(time.TimeOnly))
+	// fanoutWg.Wait()
 
 	sv.exit <- true
 
 }
 
-func (sv *server) fanOut(jobs <-chan string, workers int, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (sv *server) fanOut(jobs <-chan string, workers int) {
 	var workerWg sync.WaitGroup
 	for worker := range workers {
 		workerWg.Add(1)
