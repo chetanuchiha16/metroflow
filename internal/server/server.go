@@ -69,6 +69,7 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	sendJobWg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
+		defer close(jobs)
 		for {
 			line, _, err := reader.ReadLine() // back pressure, i think
 			if err != nil {
@@ -85,9 +86,11 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	fmt.Println("waiting for sending jobs...")
 	sendJobWg.Wait()
 	fmt.Println("waiting for sending jobs finished.")
+
 	fmt.Println("waiting for fanout to finish...")
 	fanoutWg.Wait()
 	fmt.Println("waiting for fanout finished.")
+
 	sv.exit <- true
 
 }
