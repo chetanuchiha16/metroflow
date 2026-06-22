@@ -43,9 +43,9 @@ func (sv *server) AcceptLoop() {
 		start := time.Now()
 		wg.Add(1)
 		go sv.HandleConn(conn, &wg)
-		fmt.Println("waiting for handleconn to finish")
+		fmt.Printf("[%v] for handleconn to finish\n", time.Now().Format(time.TimeOnly))
 		wg.Wait()
-		fmt.Println("waiting for handle conn finished")
+		fmt.Printf("[%v] for handle conn finished\n", time.Now().Format(time.TimeOnly))
 		fmt.Printf("handle connection finished in %v\n", time.Since(start))
 	}
 }
@@ -83,13 +83,13 @@ func (sv *server) ReadLoop(conn net.Conn) {
 			// wg.Wait()
 		}
 	}(&sendJobWg)
-	fmt.Println("waiting for sending jobs...")
+	fmt.Printf("[%v] for sending jobs...\n", time.Now().Format(time.TimeOnly))
 	sendJobWg.Wait()
-	fmt.Println("waiting for sending jobs finished.")
+	fmt.Printf("[%v] for sending jobs finished.\n", time.Now().Format(time.TimeOnly))
 
-	fmt.Println("waiting for fanout to finish...")
+	fmt.Printf("[%v] for fanout to finish...\n", time.Now().Format(time.TimeOnly))
 	fanoutWg.Wait()
-	fmt.Println("waiting for fanout finished.")
+	fmt.Printf("[%v] for fanout finished.\n", time.Now().Format(time.TimeOnly))
 
 	sv.exit <- true
 
@@ -106,11 +106,11 @@ func (sv *server) fanOut(jobs <-chan string, workers int, wg *sync.WaitGroup) {
 				// start := time.Now()
 				fmt.Printf("[%v] job \"%v\" being done by the worker %v...\n", time.Now().Format(time.TimeOnly), job, worker)
 				time.Sleep(3 * time.Second) // simulate processing
-				fmt.Printf("worker %v finished the job.\n", worker)
+				fmt.Printf("[%v]worker %v finished the job %v.\n", time.Now().Format(time.TimeOnly), worker, job)
 			}
 		}(worker, &workerWg)
 	}
-	fmt.Println("waiting for all workers to finish...")
+	fmt.Printf("[%v] for all workers to finish...\n", time.Now().Format(time.TimeOnly))
 	workerWg.Wait() // waiting for fanout to finish and fanout() is syncronous so this is blocking, job is never being sent deadlock ?
-	fmt.Println("waiting for all workers finished")
+	fmt.Printf("[%v] for all workers finished\n", time.Now().Format(time.TimeOnly))
 }
