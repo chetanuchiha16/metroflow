@@ -56,7 +56,7 @@ func (sv *server) HandleConn(conn net.Conn, wg *sync.WaitGroup) {
 
 func (sv *server) ReadLoop(conn net.Conn) {
 	reader := bufio.NewReader(conn)
-	workers := 1
+	workers := 10
 	jobs := make(chan string, workers)
 	// var fanoutWg sync.WaitGroup
 	// fanoutWg.Add(1)
