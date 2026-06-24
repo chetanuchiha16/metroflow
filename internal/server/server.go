@@ -2,12 +2,12 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"sync"
 
-	// "sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -105,6 +105,7 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 				// start := time.Now()
 				fmt.Printf("[%v] job \"%v\" being done by the worker %v...\n", time.Now().Format(time.TimeOnly), job, worker)
 				time.Sleep(3 * time.Second) // simulate processing
+				sv.rdb.LPush(context.Background(), "job", job)
 				fmt.Printf("[%v] worker %v finished the job %v.\n", time.Now().Format(time.TimeOnly), worker, job)
 			}
 		}(worker, &workerWg)

@@ -10,7 +10,7 @@ import (
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:5000",
+		Addr: "localhost:6379",
 	})
 	start := time.Now()
 	server := server.NewServer(rdb)
