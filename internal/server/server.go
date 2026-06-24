@@ -9,15 +9,17 @@ import (
 
 	// "sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type server struct {
-	ln   net.Listener
-	exit chan bool
+	ln  net.Listener
+	rdb *redis.Client
 }
 
-func NewServer() *server {
-	return &server{}
+func NewServer(rdb *redis.Client) *server {
+	return &server{rdb: rdb}
 }
 
 func (sv *server) StartServer() {
