@@ -99,6 +99,7 @@ func (sv *server) process(job string) ([]byte, error) {
 		Level: level,
 	}
 	val, err := json.Marshal(log)
+	time.Sleep(3 * time.Second) // simulate processing
 	return val, err
 }
 
@@ -115,7 +116,6 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 				if err != nil {
 					fmt.Printf("failed to process log %v", err)
 				}
-				time.Sleep(3 * time.Second) // simulate processing
 				sv.rdb.LPush(context.Background(), "job", string(log))
 				fmt.Printf("[%v] worker %v finished the job %v.\n", time.Now().Format(time.TimeOnly), worker, job)
 			}
