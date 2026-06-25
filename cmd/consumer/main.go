@@ -25,7 +25,7 @@ func main() {
 
 	csvWriter := csv.NewWriter(file)
 	csvWriter.Write([]string{"Time stamp", "ERROR", "WARN", "INFO"})
-	
+
 	for {
 		job, err := rdb.BLPop(context.Background(), 0, "job").Result()
 		if err != nil {
@@ -39,12 +39,13 @@ func main() {
 		}
 		mp[jsonLog.Level] += 1
 		if mp["ERROR"] > 1 {
-			go func() {
+			go func(mp map[string]int) {
 				defer csvWriter.Flush()
 				row := []string{time.Now().Format(time.TimeOnly), fmt.Sprint(mp["ERROR"]), fmt.Sprint(mp["WARN"]), fmt.Sprint(mp["INFO"])}
 				csvWriter.Write(row)
-
-			}()
+				clear(mp)
+				
+			}(mp)
 		}
 		fmt.Println(mp)
 	}
