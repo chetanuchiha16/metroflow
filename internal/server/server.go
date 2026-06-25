@@ -3,11 +3,13 @@ package server
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"metroflow/pkg"
 	"net"
+	"strings"
 	"sync"
-
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -89,10 +91,15 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	sendJobWg.Wait()
 	fmt.Printf("[%v] waiting for sending jobs finished.\n", time.Now().Format(time.TimeOnly))
 
-	// fanoutWg.Wait()
+}
 
-	// sv.exit <- true
-
+func (sv *server) process(job string) ([]byte, error) {
+	level := strings.Split(job, " ")[3]
+	log := pkg.LogType{
+		Level: level,
+	}
+	val, err := json.Marshal(log)
+	return val, err
 }
 
 func (sv *server) fanOut(jobs <-chan string, workers int) {
@@ -104,8 +111,12 @@ func (sv *server) fanOut(jobs <-chan string, workers int) {
 			for job := range jobs {
 				// start := time.Now()
 				fmt.Printf("[%v] job \"%v\" being done by the worker %v...\n", time.Now().Format(time.TimeOnly), job, worker)
+				log, err := sv.process(job)
+				if err != nil {
+					fmt.Printf("failed to process log %v", err)
+				}
 				time.Sleep(3 * time.Second) // simulate processing
-				sv.rdb.LPush(context.Background(), "job", job)
+				sv.rdb.LPush(context.Background(), "job", string(log))
 				fmt.Printf("[%v] worker %v finished the job %v.\n", time.Now().Format(time.TimeOnly), worker, job)
 			}
 		}(worker, &workerWg)

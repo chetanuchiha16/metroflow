@@ -15,3 +15,4 @@ when all 5 has job, the channel is blocked, the moment a worker is ready it take
 | 10      | `ceil(10/10) = 1` | ~3 s          | **3.01 s**   |
 | 5       | `ceil(10/5) = 2`  | ~6 s          | **6.00 s**   |
 | 1       | `ceil(10/1) = 10` | ~30 s         | **30.02 s**  |
+
