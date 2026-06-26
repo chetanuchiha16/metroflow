@@ -94,9 +94,9 @@ func (sv *server) ReadLoop(conn net.Conn) {
 	// var wg sync.WaitGroup
 	var sendJobWg sync.WaitGroup
 	sendJobWg.Add(1)
-	sv.wg.Add(1)
+	// sv.wg.Add(1)
 	go func(wg *sync.WaitGroup) {
-		defer sv.wg.Done()
+		// defer sv.wg.Done()
 		defer wg.Done()
 		defer close(jobs)
 		for {
