@@ -20,7 +20,6 @@ type server struct {
 	rdb *redis.Client
 	ctx context.Context
 	wg  *sync.WaitGroup
-	clients []net.Conn
 }
 
 func NewServer(ctx context.Context, wg *sync.WaitGroup, rdb *redis.Client) *server {
@@ -28,7 +27,6 @@ func NewServer(ctx context.Context, wg *sync.WaitGroup, rdb *redis.Client) *serv
 		ctx: ctx,
 		wg:  wg,
 		rdb: rdb,
-		clients: make([]net.Conn, 0),
 	}
 }
 
@@ -44,13 +42,7 @@ func (sv *server) StartServer() {
 		defer sv.wg.Done()
 		<-sv.ctx.Done()
 		fmt.Println("\nshutting down...")
-		fmt.Println(len(sv.clients))
-		for _, conn := range sv.clients {
-			fmt.Println(conn.RemoteAddr())
-			conn.Close()
-		}
 		ln.Close()
-
 	}()
 	sv.AcceptLoop()
 }
@@ -61,7 +53,6 @@ func (sv *server) AcceptLoop() {
 		if err != nil {
 			break
 		}
-		sv.clients = append(sv.clients, conn)
 		fmt.Printf("client connected at: %v\n", conn.RemoteAddr().String())
 		buffer := fmt.Appendf(nil, "connected to %v\n", conn.LocalAddr().String())
 		conn.Write(buffer)
@@ -79,6 +70,17 @@ func (sv *server) AcceptLoop() {
 func (sv *server) HandleConn(conn net.Conn) {
 	defer conn.Close()
 	defer sv.wg.Done()
+	ctx, done := context.WithCancel(context.Background())
+	defer done()
+	go func() { // this wont close after conn.close
+		select {
+
+		case <-sv.ctx.Done():
+			fmt.Println("closing connection")
+			conn.Close()
+		case <-ctx.Done():
+		}
+	}()
 	sv.ReadLoop(conn)
 }
 
