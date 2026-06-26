@@ -18,10 +18,14 @@ import (
 type server struct {
 	ln  net.Listener
 	rdb *redis.Client
+	ctx context.Context
 }
 
-func NewServer(rdb *redis.Client) *server {
-	return &server{rdb: rdb}
+func NewServer(rdb *redis.Client, ctx context.Context) *server {
+	return &server{
+		rdb: rdb,
+		ctx: ctx,
+	}
 }
 
 func (sv *server) StartServer() {
@@ -31,30 +35,38 @@ func (sv *server) StartServer() {
 	}
 	sv.ln = ln
 	fmt.Printf("server started at %v\n", ln.Addr().String())
+	go func(){
+		<-sv.ctx.Done()
+		ln.Close()
+	
+	}()
 	sv.AcceptLoop()
 }
 
 func (sv *server) AcceptLoop() {
-	conn, err := sv.ln.Accept()
-	if err != nil {
-		log.Fatal(err)
+	for {
+		conn, err := sv.ln.Accept()
+		if err != nil {
+			fmt.Println("\nshutting down...")
+			break
+		}
+		fmt.Printf("client connected at: %v\n", conn.RemoteAddr().String())
+		buffer := fmt.Appendf(nil, "connected to %v\n", conn.LocalAddr().String())
+		conn.Write(buffer)
+		// var wg sync.WaitGroup
+		// start := time.Now()
+		// wg.Add(1)
+		go sv.HandleConn(conn)
+		// fmt.Printf("[%v] waiting for handleconn to finish\n", time.Now().Format(time.TimeOnly))
+		// wg.Wait()
+		// fmt.Printf("handle connection finished in %v\n", time.Since(start))
+		// fmt.Printf("[%v] waiting for handle conn finished\n", time.Now().Format(time.TimeOnly))
 	}
-	fmt.Printf("client connected at: %v\n", conn.RemoteAddr().String())
-	buffer := fmt.Appendf(nil, "connected to %v\n", conn.LocalAddr().String())
-	conn.Write(buffer)
-	var wg sync.WaitGroup
-	start := time.Now()
-	wg.Add(1)
-	go sv.HandleConn(conn, &wg)
-	fmt.Printf("[%v] waiting for handleconn to finish\n", time.Now().Format(time.TimeOnly))
-	wg.Wait()
-	fmt.Printf("handle connection finished in %v\n", time.Since(start))
-	fmt.Printf("[%v] waiting for handle conn finished\n", time.Now().Format(time.TimeOnly))
 }
 
-func (sv *server) HandleConn(conn net.Conn, wg *sync.WaitGroup) {
+func (sv *server) HandleConn(conn net.Conn) {
 	defer conn.Close()
-	defer wg.Done()
+	// defer wg.Done()
 	sv.ReadLoop(conn)
 }
 
