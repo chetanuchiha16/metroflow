@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-///streams the log
+//streams the log
 func StreamLog(conn net.Conn) {
 	defer conn.Close()
 	// i := 0
