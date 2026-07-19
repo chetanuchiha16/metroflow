@@ -47,6 +47,7 @@ func (sv *server) StartServer() {
 	sv.AcceptLoop()
 }
 
+// handle new client in a new goroutine
 func (sv *server) AcceptLoop() {
 	for {
 		conn, err := sv.ln.Accept()
