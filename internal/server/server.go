@@ -68,6 +68,7 @@ func (sv *server) AcceptLoop() {
 	}
 }
 
+//Handle new connection 
 func (sv *server) HandleConn(conn net.Conn) {
 	defer conn.Close()
 	defer sv.wg.Done()
